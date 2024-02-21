@@ -1,11 +1,4 @@
 [toolchain]
-
-# For ESP32-C3 use:
-#channel = "nightly"
-#channel = "nightly-2024-01-04"
-components = ["rust-src"]
-
-# For ESP32 use:
 channel = "esp"
-
+components = ["rust-src"]
 targets = ["xtensa-esp32s3-espidf"]
