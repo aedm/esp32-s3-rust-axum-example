@@ -1,0 +1,4 @@
+/.embuild
+/target
+/.idea
+/env.sh

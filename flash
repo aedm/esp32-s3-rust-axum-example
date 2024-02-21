@@ -1,0 +1,3 @@
+#!/bin/sh
+cargo run -r -- -b 921600
+# EOF

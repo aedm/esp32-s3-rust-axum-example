@@ -1,0 +1,20 @@
+# Set to VERBOSE to debug issues if things aren't working properly... for your
+# application you probably want INFO.
+# CONFIG_LOG_DEFAULT_LEVEL_VERBOSE=y
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_MAXIMUM_EQUALS_DEFAULT=y
+
+
+# The tokio runtime and typical programs built with it need quite a bit of
+# stack space, but the good news is that you don't need many pthreads for
+# a complete application.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=32768
+# CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=2048
+
+# Use this to set FreeRTOS kernel tick frequency to 1000 Hz (100 Hz by default).
+# This allows to use 1 ms granuality for thread sleeps (10 ms by default).
+# CONFIG_FREERTOS_HZ=1000
+
+CONFIG_LWIP_MAX_SOCKETS=16
+CONFIG_LWIP_TCP_RECVMBOX_SIZE=128
+CONFIG_LWIP_TCP_ACCEPTMBOX_SIZE=64

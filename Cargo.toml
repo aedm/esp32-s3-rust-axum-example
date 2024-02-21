@@ -1,0 +1,74 @@
+[package]
+name = "esp32temp"
+version = "1.5.3"
+authors = ["Sami J. Mäkinen <sjm@iki.fi>"]
+edition = "2021"
+
+
+[features]
+default = ["esp32s", "reset_settings"]
+reset_settings = []
+esp32s = []
+esp32c3 = []
+
+
+[dependencies]
+#panic-halt = "0"
+anyhow = "1"
+
+axum = { version = "0", features = ["http1", "json"] }
+axum-macros = "0"
+heapless = "0.8.0"
+#actix-web = { version = "4", default-features = false, features = ["macros"] }
+#rocket = { version = "0", features = ["json"] }
+#warp = "0.3"
+
+crc = "3"
+#critical-section = { version = "1.1", features = ["std"] }
+embedded-hal = "1"
+embedded-svc = { version = "0", features = ["experimental"] }
+esp-idf-sys = { version = "0", features = ["binstart"] }
+esp-idf-svc = { version = "0", features = ["alloc", "experimental"] }
+esp-idf-hal = "0"
+#futures = "0"
+#heapless = "0"
+log = "0"
+#mio = { version = "0", features = ["log"] }
+postcard = { version = "1", features = ["alloc", "use-crc"] }
+serde = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros"] }
+#tower-http = { version = "0" }
+
+# these had to be fixed, negative temperatures were broken
+# also, migrated to embedded-hal 1.0
+
+#ds18b20 = { git = "https://github.com/sjm42/ds18b20" }
+#one-wire-bus = { git = "https://github.com/sjm42/one-wire-bus" }
+
+# tower-http = { version = "0", features = ["trace"] }
+# tracing = "0"
+# tracing-subscriber = { version = "0", features = ["env-filter"] }
+
+
+[build-dependencies]
+build-data = "0"
+embuild = "0"
+anyhow = "1"
+
+
+[profile.release]
+debug = false
+opt-level = "s"
+#codegen-units = 1
+#lto = "fat"
+strip = true
+panic = "abort"
+
+[profile.dev]
+debug = true
+opt-level = 2
+lto = "off"
+
+[package.metadata.espflash]
+partition_table = "./partitions.csv"
