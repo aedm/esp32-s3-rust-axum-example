@@ -75,9 +75,9 @@ impl<'a> WifiConnection<'a> {
         // Set the Wi-Fi configuration
         info!("Setting credentials...");
         let client_config = ClientConfiguration {
-            ssid: heapless::String::from_str(&config.wifi_ssid)
+            ssid: heapless::String::from_str(config.wifi_ssid)
                 .map_err(|_| anyhow!("SSID is too long."))?,
-            password: heapless::String::from_str(&config.wifi_pass)
+            password: heapless::String::from_str(config.wifi_pass)
                 .map_err(|_| anyhow!("Wifi password is too long."))?,
             ..Default::default()
         };
