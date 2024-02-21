@@ -15,12 +15,12 @@ espup install
 
 ### Build and run
 
-1. Set the WiFi credentials as environment variables:
-    - WIFI_SSID
-    - WIFI_PASS
+1. Set the WiFi credentials as environment variables. They will be baked into the executable at build time.
+    - `WIFI_SSID`
+    - `WIFI_PASS`
 2. This command builds the project and flashes it to the ESP32-S3:
     ```sh
-    cargo espflash flash --release --target xtensa-esp32s3-espidf --monitor 
+    cargo espflash flash --release --monitor 
     ```
 
 ### Test it
@@ -58,6 +58,8 @@ Axum wasn't designed for microcontrollers to put it mildly. It's actually a mira
 Besides Axum, Warp also works. It uses somewhat less memory, so you can maybe throw a few more requests at it.
 
 At the time of writing this, Rocket and Actix-web don't work since they require Tokio's `rt-multi-thread` feature which doesn't compile on EPS32 yet.
+
+Honestly, just use MQTT or something. It's a microcontroller, not a server.
 
 
 ## Acknowledgements

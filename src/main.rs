@@ -9,8 +9,7 @@ use anyhow::Result;
 use esp_idf_hal::prelude::Peripherals;
 use esp_idf_svc::{eventloop::EspSystemEventLoop, nvs, timer::EspTaskTimerService};
 use log::{error, info};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::thread::sleep;
 
 // We can't use #[tokio::main] since we need to initialize eventfd before starting the tokio runtime.
 fn main() {
@@ -25,7 +24,11 @@ fn main() {
 
     match rt.block_on(async { async_main().await }) {
         Ok(()) => info!("main() finished, reboot."),
-        Err(err) => error!("{err:?}"),
+        Err(err) => {
+            error!("{err:?}");
+            // Let them read the error message before rebooting
+            sleep(std::time::Duration::from_secs(3));
+        },
     }
 
     esp_idf_hal::reset::restart();
@@ -34,7 +37,7 @@ fn main() {
 async fn async_main() -> Result<()> {
     info!("Starting async_main.");
 
-    let config = Config::default();
+    let config = Config::load()?;
     info!("Configuration:\n{config:#?}");
 
     let event_loop = EspSystemEventLoop::take()?;

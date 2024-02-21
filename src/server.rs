@@ -2,9 +2,7 @@ use axum::{extract::State, routing::*, Json, Router};
 use log::info;
 use serde_json::{json, Value};
 use std::{net::SocketAddr, sync::Arc};
-use std::net::Ipv4Addr;
 use std::sync::atomic::AtomicIsize;
-use tokio::sync::RwLock;
 use crate::wifi::WifiState;
 
 // Shared state that all Axum handlers can access
