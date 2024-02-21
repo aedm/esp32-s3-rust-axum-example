@@ -728,6 +728,7 @@ dependencies = [
  "esp-idf-sys",
  "heapless",
  "log",
+ "panic-halt",
  "serde",
  "serde_json",
  "tokio",
@@ -1248,6 +1249,12 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+
+[[package]]
+name = "panic-halt"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de96540e0ebde571dc55c73d60ef407c653844e6f9a1e2fdbd40c07b9252d812"
 
 [[package]]
 name = "peeking_take_while"

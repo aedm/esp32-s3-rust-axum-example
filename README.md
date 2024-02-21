@@ -62,6 +62,10 @@ At the time of writing this, Rocket and Actix-web don't work since they require 
 Honestly, just use MQTT or something. It's a microcontroller, not a server.
 
 
+## Other ESP32 chips
+
+See `.cargo/config.toml` for the list of supported chips. Set the `target` to the chip you're using. 
+
 ## Acknowledgements
 
 This project is heavily inspired by Sami J. Mäkinen's [esp32temp](https://github.com/sjm42/esp32temp). Thanks for figuring out how to make this work!

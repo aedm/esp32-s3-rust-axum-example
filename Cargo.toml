@@ -5,6 +5,7 @@ authors = ["Gábor Gyebnár <korteur@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+panic-halt = "0"
 anyhow = "1"
 axum = { version = "0", features = ["http1", "json"] }
 axum-macros = "0"
@@ -27,7 +28,7 @@ anyhow = "1"
 [profile.release]
 debug = false
 opt-level = "s"
-#lto = "thin"
+#lto = "fat"
 strip = true
 panic = "abort"
 
