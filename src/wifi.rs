@@ -1,6 +1,8 @@
-use crate::{AppState, Config};
-use anyhow::{anyhow, bail, Context, Result};
+use crate::config::Config;
+use anyhow::{anyhow, Result};
 use embedded_svc::wifi::{ClientConfiguration, Configuration};
+use esp_idf_hal::modem::Modem;
+use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use esp_idf_svc::{
     eventloop::{EspEventLoop, System},
     ipv4,
@@ -9,46 +11,61 @@ use esp_idf_svc::{
     wifi::{AsyncWifi, EspWifi, WifiDriver},
 };
 use esp_idf_sys::{self as _};
-use log::*;
+use log::{info, warn};
+use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::sync::Arc;
-use esp_idf_hal::modem;
-use esp_idf_hal::modem::Modem;
-use esp_idf_svc::nvs::EspDefaultNvsPartition;
+use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
 
+// Shared state of the Wi-Fi connection.
+pub struct WifiState {
+    pub mac_address: String,
+    pub ssid: String,
+    ip_addr: RwLock<Option<Ipv4Addr>>,
+}
+
+impl WifiState {
+    pub async fn ip_addr(&self) -> Option<Ipv4Addr> {
+        *self.ip_addr.read().await
+    }
+}
+
+// Wrapper around the Wi-Fi connection.
 pub struct WifiConnection<'a> {
-    state: Arc<AppState>,
+    pub state: Arc<WifiState>,
     wifi: AsyncWifi<EspWifi<'a>>,
 }
 
 impl<'a> WifiConnection<'a> {
+    // Initialize the Wi-Fi driver but do not connect yet.
     pub async fn new(
         modem: Modem,
         event_loop: EspEventLoop<System>,
         timer: EspTimerService<Task>,
         default_partition: Option<EspDefaultNvsPartition>,
-        state: Arc<AppState>,
+        config: &Config,
     ) -> Result<Self> {
         info!("Initializing...");
 
-        let wifi_driver = WifiDriver::new(
-            modem,
-            event_loop.clone(),
-            default_partition,
-        )?;
+        let wifi_driver = WifiDriver::new(modem, event_loop.clone(), default_partition)?;
         let ipv4_config = ipv4::ClientConfiguration::DHCP(ipv4::DHCPClientSettings::default());
         let net_if = EspNetif::new_with_conf(&netif::NetifConfiguration {
             ip_configuration: ipv4::Configuration::Client(ipv4_config),
             ..netif::NetifConfiguration::wifi_default_client()
         })?;
 
-        // Store the MAC address in the shared state
+        // Store the MAC address in the shared wifi state
         let mac = net_if.get_mac()?;
-        *state.mac_address.write().await = Some(format!(
+        let mac_address = format!(
             "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
-        ));
+        );
+        let state = Arc::new(WifiState {
+            ip_addr: RwLock::new(None),
+            mac_address,
+            ssid: config.wifi_ssid.to_string(),
+        });
 
         // Wrap the Wi-Fi driver in the async wrapper
         let esp_wifi =
@@ -58,9 +75,9 @@ impl<'a> WifiConnection<'a> {
         // Set the Wi-Fi configuration
         info!("Setting credentials...");
         let client_config = ClientConfiguration {
-            ssid: heapless::String::from_str(&state.config.wifi_ssid)
+            ssid: heapless::String::from_str(&config.wifi_ssid)
                 .map_err(|_| anyhow!("SSID is too long."))?,
-            password: heapless::String::from_str(&state.config.wifi_pass)
+            password: heapless::String::from_str(&config.wifi_pass)
                 .map_err(|_| anyhow!("Wifi password is too long."))?,
             ..Default::default()
         };
@@ -73,37 +90,33 @@ impl<'a> WifiConnection<'a> {
         Ok(Self { state, wifi })
     }
 
-    pub async fn stay_connected(&mut self) -> anyhow::Result<()> {
-        let mut wifi = &mut self.wifi;
+    // Connect to Wi-Fi and stay connected. This function will loop forever.
+    pub async fn connect(&mut self) -> anyhow::Result<()> {
         loop {
-            // Wait for Wi-Fi to be down
-            wifi.wifi_wait(|w| w.is_up(), None).await?;
-
-            info!("Connecting...");
-            if let Err(err) = wifi.connect().await {
+            info!("Connecting to SSID '{}'...", self.state.ssid);
+            if let Err(err) = self.wifi.connect().await {
                 warn!("Connection failed: {err:?}");
-                wifi.disconnect().await?;
+                self.wifi.disconnect().await?;
                 sleep(Duration::from_secs(1)).await;
                 continue;
             }
 
-            info!("Waiting for IP address...");
+            info!("Acquiring IP address...");
             let timeout = Some(Duration::from_secs(10));
-            if let Err(err) = wifi.ip_wait_while(|w| w.is_up().map(|s| !s), timeout).await {
+            if let Err(err) = self.wifi.ip_wait_while(|w| w.is_up().map(|s| !s), timeout).await {
                 warn!("IP association failed: {err:?}");
-                wifi.disconnect().await?;
+                self.wifi.disconnect().await?;
                 sleep(Duration::from_secs(1)).await;
                 continue;
             }
 
-            // Store the IP address in the shared state
-            if let Ok(ip_info) = wifi.wifi().sta_netif().get_ip_info() {
-                info!(
-                    "Connected. IP: {:?}, SSID: {}, DNS: {:?}",
-                    ip_info.ip, self.state.config.wifi_ssid, ip_info.dns
-                );
-                *self.state.ip_addr.write().await = Some(ip_info.ip);
-            }
+            let ip_info = self.wifi.wifi().sta_netif().get_ip_info();
+            *self.state.ip_addr.write().await = ip_info.ok().map(|i| i.ip);
+            info!("Connected to '{}': {ip_info:#?}", self.state.ssid);
+
+            // Wait for Wi-Fi to be down
+            self.wifi.wifi_wait(|w| w.is_up(), None).await?;
+            warn!("Wi-Fi disconnected.");
         }
     }
 }
