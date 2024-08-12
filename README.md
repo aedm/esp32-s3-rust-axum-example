@@ -20,7 +20,7 @@ espup install
     - `WIFI_PASS`
 2. This command builds the project and flashes it to the ESP32-S3:
     ```sh
-    cargo espflash flash --release --monitor 
+    cargo espflash flash --partition-table partitions.csv --release --monitor 
     ```
 
 ### Test it
